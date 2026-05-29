@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockZap — Control de Zapatería</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+:root {
+  --green: #1D9E75;
+  --green-dark: #0F6E56;
+  --green-light: #E1F5EE;
+  --green-text: #085041;
+  --amber: #BA7517;
+  --amber-light: #FAEEDA;
+  --red: #A32D2D;
+  --red-light: #FCEBEB;
+  --blue: #185FA5;
+  --blue-light: #E6F1FB;
+  --gray: #5F5E5A;
+  --bg: #f7f7f5;
+  --bg-card: #ffffff;
+  --bg-secondary: #f1efeb;
+  --text: #1a1a18;
+  --text-muted: #6b6b67;
+  --border: rgba(0,0,0,0.1);
+  --border-med: rgba(0,0,0,0.18);
+  --radius: 10px;
+  --radius-lg: 14px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { 
+  font-family: 'DM Sans', system-ui, sans-serif; 
+  background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* LAYOUT */
+.app { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 220px; background: var(--bg-card); border-right: 0.5px solid var(--border);
+  display: flex; flex-direction: column; position: fixed; top: 0; left: 0;
+  height: 100vh; z-index: 10; padding: 0;
+}
+.sidebar-logo {
+  padding: 20px 20px 16px; border-bottom: 0.5px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-icon {
+  width: 36px; height: 36px; border-radius: var(--radius);
+  background: var(--green); display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 18px; flex-shrink: 0;
+}
+.logo-name { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+.logo-sub { font-size: 11px; color: var(--text-muted); }
+
+.sidebar-nav { padding: 12px 10px; flex: 1; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: var(--radius);
+  cursor: pointer; font-size: 13px; color: var(--text-muted);
+  margin-bottom: 2px; transition: all 0.15s; border: none; background: none; width: 100%;
+  text-align: left;
+}
+.nav-item i { font-size: 18px; }
+.nav-item:hover { background: var(--bg-secondary); color: var(--text); }
+.nav-item.active { background: var(--green-light); color: var(--green-dark); font-weight: 500; }
+.nav-item.active i { color: var(--green); }
+
+.sidebar-footer { padding: 12px 10px 16px; border-top: 0.5px solid var(--border); }
+.sync-status {
+  font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 8px;
+  padding: 0 4px;
+}
+
+.main { margin-left: 220px; flex: 1; min-height: 100vh; }
+.topbar {
+  background: var(--bg-card); border-bottom: 0.5px solid var(--border);
+  padding: 14px 28px; display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 5;
+}
+.topbar-title { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+.topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+.content { padding: 24px 28px; }
+
+/* SECTIONS */
+.section { display: none; }
+.section.active { display: block; }
+
+/* STATS */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+.stat-card {
+  background: var(--bg-card); border-radius: var(--radius-lg);
+  border: 0.5px solid var(--border); padding: 16px 20px;
+  box-shadow: var(--shadow);
+}
+.stat-icon { 
+  width: 34px; height: 34px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; margin-bottom: 12px;
+}
+.stat-icon.green { background: var(--green-light); color: var(--green); }
+.stat-icon.amber { background: var(--amber-light); color: var(--amber); }
+.stat-icon.red { background: var(--red-light); color: var(--red); }
+.stat-icon.blue { background: var(--blue-light); color: var(--blue); }
+.stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; }
+.stat-value { font-size: 26px; font-weight: 600; letter-spacing: -0.5px; margin-top: 2px; }
+.stat-value.green { color: var(--green-dark); }
+.stat-value.amber { color: var(--amber); }
+.stat-value.red { color: var(--red); }
+
+/* CARD */
+.card {
+  background: var(--bg-card); border-radius: var(--radius-lg);
+  border: 0.5px solid var(--border); box-shadow: var(--shadow); overflow: hidden;
+}
+.card-padded { padding: 20px 24px; }
+
+/* TOOLBAR */
+.toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+.toolbar-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.search-wrap {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-card); border: 0.5px solid var(--border-med);
+  border-radius: var(--radius); padding: 8px 12px; min-width: 240px;
+}
+.search-wrap i { color: var(--text-muted); font-size: 16px; }
+.search-wrap input { border: none; background: transparent; outline: none; font-size: 13px; color: var(--text); width: 100%; font-family: inherit; }
+
+/* FILTERS */
+.filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.pill {
+  padding: 5px 12px; border-radius: 99px; font-size: 12px; cursor: pointer;
+  border: 0.5px solid var(--border-med); background: var(--bg-card); color: var(--text-muted);
+  font-family: inherit; transition: all 0.12s;
+}
+.pill:hover { border-color: var(--green); color: var(--green-dark); }
+.pill.active { background: var(--green-light); color: var(--green-dark); border-color: var(--green); font-weight: 500; }
+
+/* TABLE */
+table { width: 100%; border-collapse: collapse; }
+th {
+  font-size: 11px; font-weight: 600; color: var(--text-muted); text-align: left;
+  padding: 10px 16px; border-bottom: 0.5px solid var(--border);
+  text-transform: uppercase; letter-spacing: 0.05em; background: var(--bg-secondary);
+}
+td { padding: 11px 16px; border-bottom: 0.5px solid var(--border); font-size: 13px; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: #fafaf8; }
+
+/* BADGES */
+.badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 500; }
+.badge-green { background: var(--green-light); color: var(--green-text); }
+.badge-amber { background: var(--amber-light); color: #633806; }
+.badge-red { background: var(--red-light); color: var(--red); }
+.badge-blue { background: var(--blue-light); color: var(--blue); }
+.badge-gray { background: var(--bg-secondary); color: var(--gray); }
+
+/* BUTTONS */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+  border-radius: var(--radius); font-size: 13px; font-weight: 500;
+  cursor: pointer; border: none; font-family: inherit; transition: all 0.12s;
+}
+.btn i { font-size: 16px; }
+.btn-primary { background: var(--green); color: #fff; }
+.btn-primary:hover { background: var(--green-dark); }
+.btn-secondary { background: var(--bg-card); color: var(--text); border: 0.5px solid var(--border-med); }
+.btn-secondary:hover { background: var(--bg-secondary); }
+.btn-danger { background: transparent; color: var(--text-muted); border: 0.5px solid var(--border); padding: 6px 10px; }
+.btn-danger:hover { border-color: var(--red); color: var(--red); }
+.btn-edit { background: transparent; color: var(--text-muted); border: 0.5px solid var(--border); padding: 6px 10px; }
+.btn-edit:hover { border-color: var(--border-med); color: var(--text); }
+.btn-sync { background: var(--green-light); color: var(--green-dark); border: 0.5px solid #9FE1CB; width: 100%; justify-content: center; font-size: 13px; }
+.btn-sync:hover { background: #c8f0e3; }
+.btn-sync.loading i { animation: spin 1s linear infinite; }
+
+/* COLOR DOT */
+.color-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 0.5px solid rgba(0,0,0,0.15); margin-right: 6px; vertical-align: middle; flex-shrink: 0; }
+
+/* STOCK CARDS */
+.stock-card { background: var(--bg-card); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.stock-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.stock-card-name { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.talle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 8px; }
+.talle-item { border: 0.5px solid var(--border); border-radius: var(--radius); padding: 8px 6px; text-align: center; background: var(--bg-secondary); }
+.talle-item.ok { border-color: #9FE1CB; background: #f0fbf6; }
+.talle-item.low { border-color: #FAC775; background: #fdf6eb; }
+.talle-item.zero { border-color: #F7C1C1; background: #fdf2f2; }
+.talle-item span { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; }
+.talle-item input { width: 100%; text-align: center; border: 0.5px solid var(--border); border-radius: 6px; padding: 4px 2px; font-size: 13px; font-weight: 600; background: #fff; color: var(--text); font-family: inherit; }
+.talle-item.zero input { color: var(--red); }
+.talle-item.low input { color: var(--amber); }
+.talle-item.ok input { color: var(--green-dark); }
+
+/* MODAL */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+  display: none; align-items: center; justify-content: center; z-index: 100;
+  backdrop-filter: blur(2px);
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--bg-card); border-radius: var(--radius-lg);
+  border: 0.5px solid var(--border); padding: 26px 28px;
+  width: 500px; max-width: 95vw; max-height: 88vh; overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+}
+.modal-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; letter-spacing: -0.3px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; padding-top: 18px; border-top: 0.5px solid var(--border); }
+
+/* FORMS */
+.form-row { margin-bottom: 14px; }
+.form-row label { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.03em; }
+.form-row input, .form-row select, .form-row textarea {
+  width: 100%; padding: 9px 12px; border-radius: var(--radius);
+  border: 0.5px solid var(--border-med); background: var(--bg);
+  color: var(--text); font-size: 13px; font-family: inherit; outline: none;
+}
+.form-row input:focus, .form-row select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(29,158,117,0.1); }
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+/* VENTA TOTAL */
+.venta-total { background: var(--green-light); border-radius: var(--radius); padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+.venta-total-label { font-size: 13px; color: var(--green-dark); font-weight: 500; }
+.venta-total-amount { font-size: 22px; font-weight: 700; color: var(--green-dark); letter-spacing: -0.5px; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 200;
+  padding: 11px 18px; border-radius: var(--radius); font-size: 13px; font-weight: 500;
+  display: none; align-items: center; gap: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15); animation: slideUp 0.2s ease;
+}
+.toast.show { display: flex; }
+.toast.success { background: var(--green); color: #fff; }
+.toast.error { background: #7A1F1F; color: #fff; }
+.toast.info { background: #1a3a5c; color: #fff; }
+
+/* CONFIG */
+.config-block { background: var(--bg-card); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 16px; box-shadow: var(--shadow); }
+.config-block-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.config-block-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.6; }
+.code-block { background: #1a1a18; color: #9FE1CB; font-family: 'Courier New', monospace; font-size: 11px; padding: 14px 16px; border-radius: var(--radius); overflow-x: auto; line-height: 1.7; margin-top: 8px; }
+
+/* EMPTY */
+.empty { text-align: center; padding: 50px 20px; color: var(--text-muted); }
+.empty i { font-size: 44px; opacity: 0.3; display: block; margin-bottom: 12px; }
+.empty p { font-size: 14px; }
+
+/* VENTAS HISTORY */
+.venta-hist { display: grid; grid-template-columns: 110px 1fr auto auto; gap: 12px; align-items: center; padding: 10px 16px; border-bottom: 0.5px solid var(--border); }
+.venta-hist:last-child { border-bottom: none; }
+.venta-hist:hover { background: #fafaf8; }
+
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .content { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon"><i class="ti ti-shoe"></i></div>
+    <div>
+      <div class="logo-name">StockZap</div>
+      <div class="logo-sub">Zapatería</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <button class="nav-item active" onclick="showSection('productos')" id="nav-productos">
+      <i class="ti ti-package"></i> Productos
+    </button>
+    <button class="nav-item" onclick="showSection('stock')" id="nav-stock">
+      <i class="ti ti-stack-2"></i> Stock por talle
+    </button>
+    <button class="nav-item" onclick="showSection('ventas')" id="nav-ventas">
+      <i class="ti ti-shopping-cart"></i> Ventas
+    </button>
+    <button class="nav-item" onclick="showSection('config')" id="nav-config">
+      <i class="ti ti-settings"></i> Configuración
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn btn-sync" id="sync-btn" onclick="syncAll()">
+      <i class="ti ti-refresh" id="sync-icon"></i> Sincronizar Sheets
+    </button>
+    <div class="sync-status" id="sync-status">Sin configurar</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="topbar-title">Productos</div>
+      <div class="topbar-sub" id="topbar-sub">Gestión de inventario</div>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <span id="topbar-badge"></span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- PRODUCTOS -->
+    <div class="section active" id="section-productos">
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card"><div class="stat-icon green"><i class="ti ti-package"></i></div><div class="stat-label">Productos</div><div class="stat-value" id="s-productos">0</div></div>
+        <div class="stat-card"><div class="stat-icon green"><i class="ti ti-stack-2"></i></div><div class="stat-label">Unidades</div><div class="stat-value green" id="s-unidades">0</div></div>
+        <div class="stat-card"><div class="stat-icon red"><i class="ti ti-alert-triangle"></i></div><div class="stat-label">Sin stock</div><div class="stat-value red" id="s-sinstock">0</div></div>
+        <div class="stat-card"><div class="stat-icon blue"><i class="ti ti-cash"></i></div><div class="stat-label">Ventas totales</div><div class="stat-value green" id="s-ventas">$0</div></div>
+      </div>
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="search-wrap">
+            <i class="ti ti-search"></i>
+            <input type="text" placeholder="Buscar producto..." id="q-productos" oninput="renderProductos()">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="abrirModalProducto()">
+          <i class="ti ti-plus"></i> Nuevo producto
+        </button>
+      </div>
+      <div class="filter-bar" id="filter-marcas"></div>
+      <div class="card">
+        <table>
+          <thead><tr>
+            <th>Producto</th><th>Color</th><th>Talles con stock</th>
+            <th>Stock total</th><th>Precio</th><th>Estado</th><th></th>
+          </tr></thead>
+          <tbody id="tbody-productos"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- STOCK -->
+    <div class="section" id="section-stock">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <i class="ti ti-search"></i>
+          <input type="text" placeholder="Buscar producto..." id="q-stock" oninput="renderStock()">
+        </div>
+        <button class="btn btn-secondary" onclick="guardarStockSheets()" id="btn-guardar-stock">
+          <i class="ti ti-cloud-upload"></i> Guardar cambios en Sheets
+        </button>
+      </div>
+      <div id="stock-container"></div>
+    </div>
+
+    <!-- VENTAS -->
+    <div class="section" id="section-ventas">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="search-wrap">
+            <i class="ti ti-search"></i>
+            <input type="text" placeholder="Buscar venta..." id="q-ventas" oninput="renderVentas()">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="abrirModalVenta()">
+          <i class="ti ti-plus"></i> Registrar venta
+        </button>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr>
+            <th>Fecha</th><th>Producto</th><th>Talle</th><th>Cant.</th><th>Precio unit.</th><th>Total</th>
+          </tr></thead>
+          <tbody id="tbody-ventas"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="section" id="section-config">
+
+      <div class="config-block">
+        <div class="config-block-title"><i class="ti ti-brand-google" style="font-size:18px; color:#4285F4;"></i> Google Sheets — Configuración</div>
+        <div class="config-block-desc">
+          Ingresá el ID de tu Google Sheet y el Web App URL del script para lectura/escritura completa.
+          El ID lo encontrás en la URL del spreadsheet: docs.google.com/spreadsheets/d/<strong>ESTE_ES_EL_ID</strong>/edit
+        </div>
+        <div class="form-row">
+          <label>ID del Spreadsheet</label>
+          <input type="text" id="cfg-sheet-id" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
+        </div>
+        <div class="form-grid-2">
+          <div class="form-row">
+            <label>Nombre hoja Productos</label>
+            <input type="text" id="cfg-hoja-productos" value="Productos">
+          </div>
+          <div class="form-row">
+            <label>Nombre hoja Ventas</label>
+            <input type="text" id="cfg-hoja-ventas" value="Ventas">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>API Key de Google Sheets (solo lectura)</label>
+          <input type="password" id="cfg-api-key" placeholder="AIza...">
+        </div>
+        <div class="form-row">
+          <label>Web App URL (Apps Script — para escritura)</label>
+          <input type="text" id="cfg-webapp-url" placeholder="https://script.google.com/macros/s/XXXXX/exec">
+        </div>
+        <button class="btn btn-primary" onclick="guardarConfig()"><i class="ti ti-check"></i> Guardar configuración</button>
+      </div>
+
+      <div class="config-block">
+        <div class="config-block-title"><i class="ti ti-code" style="font-size:17px;"></i> Apps Script para escritura</div>
+        <div class="config-block-desc">
+          Para que la app pueda guardar datos en tu spreadsheet, necesitás crear un Google Apps Script.<br>
+          <strong>Pasos:</strong> En tu spreadsheet → Extensiones → Apps Script → pegá este código → Implementar → Nueva implementación → Aplicación web → Ejecutar como Yo → Acceso a Cualquiera → Copiar URL.
+        </div>
+        <div class="code-block" id="apps-script-code">// Pegar en Google Apps Script
+const SHEET_ID = "TU_SPREADSHEET_ID"; // ← reemplazá con tu ID
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    
+    if (data.action === "saveProductos") {
+      const sheet = ss.getSheetByName("Productos") || ss.insertSheet("Productos");
+      sheet.clearContents();
+      sheet.appendRow(["id","marca","modelo","color","talles_stock","precio"]);
+      data.productos.forEach(p => {
+        sheet.appendRow([p.id, p.marca, p.modelo, p.color, JSON.stringify(p.stock||{}), p.precio]);
+      });
+    }
+    
+    if (data.action === "saveVenta") {
+      const sheet = ss.getSheetByName("Ventas") || ss.insertSheet("Ventas");
+      if (sheet.getLastRow() === 0) {
+        sheet.appendRow(["id","fecha","producto_id","marca","modelo","talle","cantidad","precio_unit","total"]);
+      }
+      const v = data.venta;
+      sheet.appendRow([v.id, v.fecha, v.productoId, v.marca, v.modelo, v.talle, v.cantidad, v.precioUnit, v.total]);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ok:true}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ok:false, error: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  return ContentService.createTextOutput("StockZap OK");
+}</div>
+        <button class="btn btn-secondary" style="margin-top:10px;" onclick="copiarScript()">
+          <i class="ti ti-copy"></i> Copiar código
+        </button>
+      </div>
+
+      <div class="config-block">
+        <div class="config-block-title"><i class="ti ti-ruler-2" style="font-size:17px;"></i> Talles</div>
+        <div class="config-block-desc">Definí los talles que maneja tu zapatería, separados por coma.</div>
+        <div class="form-row"><input type="text" id="cfg-talles" value="35,36,37,38,39,40,41,42,43,44"></div>
+        <button class="btn btn-primary" onclick="guardarTalles()"><i class="ti ti-check"></i> Guardar talles</button>
+      </div>
+
+      <div class="config-block">
+        <div class="config-block-title"><i class="ti ti-database" style="font-size:17px;"></i> Datos de prueba</div>
+        <div class="config-block-desc">Cargá productos de ejemplo para explorar la app sin conectar Sheets.</div>
+        <button class="btn btn-primary" onclick="cargarDemo()"><i class="ti ti-sparkles"></i> Cargar datos de prueba</button>
+      </div>
+
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- MODAL PRODUCTO -->
+<div class="overlay" id="modal-producto">
+  <div class="modal">
+    <div class="modal-title" id="modal-prod-title">Nuevo producto</div>
+    <div class="form-grid-2">
+      <div class="form-row"><label>Marca</label><input type="text" id="p-marca" placeholder="Nike, Adidas..."></div>
+      <div class="form-row"><label>Modelo</label><input type="text" id="p-modelo" placeholder="Air Force 1..."></div>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-row"><label>Color</label><input type="text" id="p-color" placeholder="Negro, Blanco..."></div>
+      <div class="form-row"><label>Precio ($)</label><input type="number" id="p-precio" placeholder="0" min="0"></div>
+    </div>
+    <div class="form-row">
+      <label>Stock por talle</label>
+      <div class="talle-grid" id="talle-grid-modal" style="margin-top:8px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cerrarModal('modal-producto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarProducto()"><i class="ti ti-check"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VENTA -->
+<div class="overlay" id="modal-venta">
+  <div class="modal">
+    <div class="modal-title">Registrar venta</div>
+    <div class="form-row">
+      <label>Producto</label>
+      <select id="v-producto" onchange="actualizarTallesVenta()">
+        <option value="">Seleccioná un producto...</option>
+      </select>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-row">
+        <label>Talle</label>
+        <select id="v-talle" onchange="actualizarTotalVenta()">
+          <option value="">Seleccioná talle...</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Cantidad</label>
+        <input type="number" id="v-cantidad" value="1" min="1" oninput="actualizarTotalVenta()">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Precio unitario ($)</label>
+      <input type="number" id="v-precio" placeholder="0" min="0" oninput="actualizarTotalVenta()">
+    </div>
+    <div class="venta-total">
+      <span class="venta-total-label">Total de la venta</span>
+      <span class="venta-total-amount" id="v-total">$0</span>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="cerrarModal('modal-venta')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarVenta()"><i class="ti ti-check"></i> Confirmar venta</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><i class="ti ti-check"></i><span id="toast-msg"></span></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────
+let productos = [];
+let ventas = [];
+let talles = ['35','36','37','38','39','40','41','42','43','44'];
+let editingId = null;
+let filtroMarca = 'all';
+let cfg = {
+  sheetId: localStorage.getItem('sz_sheetId') || '',
+  hojaProductos: localStorage.getItem('sz_hojaProductos') || 'Productos',
+  hojaVentas: localStorage.getItem('sz_hojaVentas') || 'Ventas',
+  apiKey: localStorage.getItem('sz_apiKey') || '',
+  webappUrl: localStorage.getItem('sz_webappUrl') || ''
+};
+
+// Cargar config guardada en inputs
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('cfg-sheet-id').value = cfg.sheetId;
+  document.getElementById('cfg-hoja-productos').value = cfg.hojaProductos;
+  document.getElementById('cfg-hoja-ventas').value = cfg.hojaVentas;
+  document.getElementById('cfg-api-key').value = cfg.apiKey;
+  document.getElementById('cfg-webapp-url').value = cfg.webappUrl;
+  const savedTalles = localStorage.getItem('sz_talles');
+  if (savedTalles) { talles = savedTalles.split(','); document.getElementById('cfg-talles').value = savedTalles; }
+  const savedProductos = localStorage.getItem('sz_productos');
+  if (savedProductos) { try { productos = JSON.parse(savedProductos); } catch(e){} }
+  const savedVentas = localStorage.getItem('sz_ventas');
+  if (savedVentas) { try { ventas = JSON.parse(savedVentas); } catch(e){} }
+  actualizarSyncStatus();
+  renderProductos();
+});
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function guardarLocal() {
+  localStorage.setItem('sz_productos', JSON.stringify(productos));
+  localStorage.setItem('sz_ventas', JSON.stringify(ventas));
+}
+
+// ─── NAVEGACIÓN ───────────────────────────────────────────────
+const secTitles = { productos: ['Productos', 'Gestión de inventario'], stock: ['Stock por talle', 'Editá cantidades directamente'], ventas: ['Registro de ventas', 'Historial y punto de venta'], config: ['Configuración', 'Google Sheets y preferencias'] };
+
+function showSection(s) {
+  document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('section-' + s).classList.add('active');
+  document.getElementById('nav-' + s).classList.add('active');
+  const [title, sub] = secTitles[s];
+  document.getElementById('topbar-title').textContent = title;
+  document.getElementById('topbar-sub').textContent = sub;
+  if (s === 'productos') renderProductos();
+  if (s === 'stock') renderStock();
+  if (s === 'ventas') renderVentas();
+}
+
+// ─── TOAST ────────────────────────────────────────────────────
+function toast(msg, tipo = 'success') {
+  const el = document.getElementById('toast');
+  el.className = 'toast show ' + tipo;
+  document.getElementById('toast-msg').textContent = msg;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+function cerrarModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ─── UTILS ────────────────────────────────────────────────────
+function colorHex(name) {
+  const m = { negro:'#1a1a1a', blanco:'#f5f5f0', rojo:'#e24b4a', azul:'#378add', verde:'#639922', amarillo:'#ef9f27', gris:'#888780', rosa:'#d4537e', beige:'#d4b896', marron:'#7B3F00', naranja:'#e67e22', violeta:'#7f77dd', bordo:'#6b1a2a' };
+  const l = (name || '').toLowerCase();
+  for (const k in m) if (l.includes(k)) return m[k];
+  return '#aaa';
+}
+
+function stockTotal(p) { return Object.values(p.stock || {}).reduce((a, b) => a + (parseInt(b) || 0), 0); }
+
+function badgeStock(total) {
+  if (total === 0) return '<span class="badge badge-red">Sin stock</span>';
+  if (total <= 5) return '<span class="badge badge-amber">Stock bajo</span>';
+  return '<span class="badge badge-green">Disponible</span>';
+}
+
+function fmtPeso(n) { return '$' + Number(n || 0).toLocaleString('es-AR'); }
+
+// ─── STATS ────────────────────────────────────────────────────
+function renderStats() {
+  document.getElementById('s-productos').textContent = productos.length;
+  document.getElementById('s-unidades').textContent = productos.reduce((a, p) => a + stockTotal(p), 0);
+  document.getElementById('s-sinstock').textContent = productos.filter(p => stockTotal(p) === 0).length;
+  document.getElementById('s-ventas').textContent = fmtPeso(ventas.reduce((a, v) => a + (parseFloat(v.total) || 0), 0));
+}
+
+// ─── PRODUCTOS ────────────────────────────────────────────────
+function renderProductos() {
+  renderStats();
+  const q = document.getElementById('q-productos').value.toLowerCase();
+  const marcas = [...new Set(productos.map(p => p.marca).filter(Boolean))];
+  document.getElementById('filter-marcas').innerHTML =
+    '<button class="pill' + (filtroMarca === 'all' ? ' active' : '') + '" onclick="setFiltroMarca(\'all\')">Todas</button>' +
+    marcas.map(m => `<button class="pill${filtroMarca === m ? ' active' : ''}" onclick="setFiltroMarca('${m}')">${m}</button>`).join('');
+
+  const filtrados = productos.filter(p => {
+    const matchQ = (p.marca + ' ' + p.modelo + ' ' + p.color).toLowerCase().includes(q);
+    const matchM = filtroMarca === 'all' || p.marca === filtroMarca;
+    return matchQ && matchM;
+  });
+
+  const tbody = document.getElementById('tbody-productos');
+  if (!filtrados.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><i class="ti ti-package"></i><p>No hay productos. ¡Agregá el primero!</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtrados.map(p => {
+    const total = stockTotal(p);
+    const tallesOk = Object.entries(p.stock || {}).filter(([, v]) => parseInt(v) > 0).map(([k]) => k).join(', ') || '—';
+    return `<tr>
+      <td><strong style="font-size:13px;">${p.marca}</strong><br><span style="color:var(--text-muted);font-size:12px;">${p.modelo}</span></td>
+      <td><span class="color-dot" style="background:${colorHex(p.color)}"></span>${p.color}</td>
+      <td><span style="font-size:12px;color:var(--text-muted);">${tallesOk}</span></td>
+      <td><strong>${total}</strong> unid.</td>
+      <td>${fmtPeso(p.precio)}</td>
+      <td>${badgeStock(total)}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-edit" onclick="abrirModalProducto('${p.id}')" style="margin-right:4px;"><i class="ti ti-edit"></i></button>
+        <button class="btn btn-danger" onclick="eliminarProducto('${p.id}')"><i class="ti ti-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function setFiltroMarca(m) { filtroMarca = m; renderProductos(); }
+
+function abrirModalProducto(id) {
+  editingId = id || null;
+  document.getElementById('modal-prod-title').textContent = id ? 'Editar producto' : 'Nuevo producto';
+  const p = id ? productos.find(x => x.id === id) : null;
+  document.getElementById('p-marca').value = p?.marca || '';
+  document.getElementById('p-modelo').value = p?.modelo || '';
+  document.getElementById('p-color').value = p?.color || '';
+  document.getElementById('p-precio').value = p?.precio || '';
+  document.getElementById('talle-grid-modal').innerHTML = talles.map(t => {
+    const qty = p?.stock?.[t] ?? 0;
+    const cls = qty === 0 ? 'zero' : qty <= 2 ? 'low' : 'ok';
+    return `<div class="talle-item ${cls}"><span>${t}</span><input type="number" id="tm-${t}" min="0" value="${qty}"></div>`;
+  }).join('');
+  document.getElementById('modal-producto').classList.add('open');
+}
+
+function guardarProducto() {
+  const marca = document.getElementById('p-marca').value.trim();
+  const modelo = document.getElementById('p-modelo').value.trim();
+  const color = document.getElementById('p-color').value.trim();
+  const precio = parseFloat(document.getElementById('p-precio').value) || 0;
+  if (!marca || !modelo) { toast('Completá marca y modelo', 'error'); return; }
+  const stock = {};
+  talles.forEach(t => { stock[t] = parseInt(document.getElementById('tm-' + t)?.value) || 0; });
+  if (editingId) {
+    const p = productos.find(x => x.id === editingId);
+    Object.assign(p, { marca, modelo, color, precio, stock });
+  } else {
+    productos.push({ id: uid(), marca, modelo, color, precio, stock });
+  }
+  guardarLocal();
+  cerrarModal('modal-producto');
+  renderProductos();
+  toast(editingId ? 'Producto actualizado' : 'Producto agregado ✓');
+}
+
+function eliminarProducto(id) {
+  if (!confirm('¿Eliminar este producto?')) return;
+  productos = productos.filter(p => p.id !== id);
+  guardarLocal();
+  renderProductos();
+  renderStock();
+  toast('Producto eliminado');
+}
+
+// ─── STOCK ────────────────────────────────────────────────────
+function renderStock() {
+  const q = document.getElementById('q-stock').value.toLowerCase();
+  const filtrados = productos.filter(p => (p.marca + p.modelo + p.color).toLowerCase().includes(q));
+  const container = document.getElementById('stock-container');
+  if (!filtrados.length) {
+    container.innerHTML = `<div class="empty"><i class="ti ti-stack-2"></i><p>No hay productos cargados.</p></div>`;
+    return;
+  }
+  container.innerHTML = filtrados.map(p => {
+    const items = talles.map(t => {
+      const qty = p.stock?.[t] ?? 0;
+      const cls = qty === 0 ? 'zero' : qty <= 2 ? 'low' : 'ok';
+      return `<div class="talle-item ${cls}"><span>${t}</span><input type="number" min="0" value="${qty}" onchange="updateStock('${p.id}','${t}',this.value)"></div>`;
+    }).join('');
+    return `<div class="stock-card">
+      <div class="stock-card-header">
+        <div class="stock-card-name">
+          <span class="color-dot" style="background:${colorHex(p.color)};width:12px;height:12px;"></span>
+          <strong>${p.marca} ${p.modelo}</strong>
+          <span style="font-size:12px;color:var(--text-muted);font-weight:400;">${p.color}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          ${badgeStock(stockTotal(p))}
+          <span style="font-size:12px;color:var(--text-muted);">Total: <strong>${stockTotal(p)}</strong></span>
+        </div>
+      </div>
+      <div class="talle-grid">${items}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateStock(id, talle, val) {
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+  if (!p.stock) p.stock = {};
+  p.stock[talle] = parseInt(val) || 0;
+  guardarLocal();
+  renderStats();
+}
+
+async function guardarStockSheets() {
+  if (!cfg.webappUrl) { toast('Configurá el Web App URL primero', 'error'); showSection('config'); return; }
+  const btn = document.getElementById('btn-guardar-stock');
+  btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> Guardando...';
+  try {
+    await postSheets({ action: 'saveProductos', productos });
+    toast('Stock guardado en Google Sheets ✓');
+  } catch (e) {
+    toast('Error al guardar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.innerHTML = '<i class="ti ti-cloud-upload"></i> Guardar cambios en Sheets';
+  }
+}
+
+// ─── VENTAS ───────────────────────────────────────────────────
+function renderVentas() {
+  const q = document.getElementById('q-ventas').value.toLowerCase();
+  const filtradas = [...ventas].reverse().filter(v => {
+    const p = productos.find(x => x.id === v.productoId);
+    return (p ? p.marca + p.modelo + p.color : '').toLowerCase().includes(q) || v.talle?.includes(q);
+  });
+  const tbody = document.getElementById('tbody-ventas');
+  if (!filtradas.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><i class="ti ti-shopping-cart"></i><p>No hay ventas registradas.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtradas.map(v => {
+    const p = productos.find(x => x.id === v.productoId);
+    return `<tr>
+      <td style="font-size:12px;color:var(--text-muted);white-space:nowrap;">${v.fecha}</td>
+      <td><strong style="font-size:13px;">${p ? p.marca + ' ' + p.modelo : '—'}</strong><br><span style="font-size:11px;color:var(--text-muted);">${p?.color || ''}</span></td>
+      <td><span class="badge badge-blue">Talle ${v.talle}</span></td>
+      <td>${v.cantidad}</td>
+      <td>${fmtPeso(v.precioUnit)}</td>
+      <td><strong>${fmtPeso(v.total)}</strong></td>
+    </tr>`;
+  }).join('');
+}
+
+function abrirModalVenta() {
+  const sel = document.getElementById('v-producto');
+  sel.innerHTML = '<option value="">Seleccioná un producto...</option>' +
+    productos.map(p => `<option value="${p.id}">${p.marca} ${p.modelo} — ${p.color}</option>`).join('');
+  document.getElementById('v-talle').innerHTML = '<option value="">Seleccioná talle...</option>';
+  document.getElementById('v-cantidad').value = 1;
+  document.getElementById('v-precio').value = '';
+  document.getElementById('v-total').textContent = '$0';
+  document.getElementById('modal-venta').classList.add('open');
+}
+
+function actualizarTallesVenta() {
+  const id = document.getElementById('v-producto').value;
+  const p = productos.find(x => x.id === id);
+  const sel = document.getElementById('v-talle');
+  sel.innerHTML = '<option value="">Seleccioná talle...</option>';
+  if (p) {
+    talles.forEach(t => {
+      const qty = p.stock?.[t] || 0;
+      if (qty > 0) {
+        const opt = new Option(`Talle ${t} (${qty} disp.)`, t);
+        sel.appendChild(opt);
+      }
+    });
+    document.getElementById('v-precio').value = p.precio || '';
+    actualizarTotalVenta();
+  }
+}
+
+function actualizarTotalVenta() {
+  const qty = parseInt(document.getElementById('v-cantidad').value) || 0;
+  const precio = parseFloat(document.getElementById('v-precio').value) || 0;
+  document.getElementById('v-total').textContent = fmtPeso(qty * precio);
+}
+
+async function confirmarVenta() {
+  const productoId = document.getElementById('v-producto').value;
+  const talle = document.getElementById('v-talle').value;
+  const cantidad = parseInt(document.getElementById('v-cantidad').value) || 0;
+  const precioUnit = parseFloat(document.getElementById('v-precio').value) || 0;
+  if (!productoId || !talle || cantidad < 1) { toast('Completá todos los campos', 'error'); return; }
+  const p = productos.find(x => x.id === productoId);
+  const stockActual = p.stock?.[talle] || 0;
+  if (cantidad > stockActual) { toast('Stock insuficiente (quedan ' + stockActual + ')', 'error'); return; }
+  p.stock[talle] = stockActual - cantidad;
+  const total = cantidad * precioUnit;
+  const venta = {
+    id: uid(), productoId, marca: p.marca, modelo: p.modelo, talle,
+    cantidad, precioUnit, total,
+    fecha: new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  };
+  ventas.push(venta);
+  guardarLocal();
+  cerrarModal('modal-venta');
+  renderVentas(); renderProductos(); renderStock();
+  toast('Venta registrada — stock descontado ✓');
+  if (cfg.webappUrl) {
+    try { await postSheets({ action: 'saveVenta', venta }); } catch(e) { console.warn('Sheets write failed', e); }
+  }
+}
+
+// ─── GOOGLE SHEETS ────────────────────────────────────────────
+function actualizarSyncStatus() {
+  const el = document.getElementById('sync-status');
+  if (!cfg.sheetId) { el.textContent = 'Sin configurar'; return; }
+  el.textContent = 'ID: ' + cfg.sheetId.slice(0, 12) + '...';
+}
+
+async function syncAll() {
+  if (!cfg.sheetId || !cfg.apiKey) {
+    toast('Configurá el ID y API Key primero', 'error');
+    showSection('config'); return;
+  }
+  const btn = document.getElementById('sync-btn');
+  const icon = document.getElementById('sync-icon');
+  btn.disabled = true; icon.style.animation = 'spin 1s linear infinite';
+  try {
+    const base = `https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}/values`;
+    // Leer productos
+    const rP = await fetch(`${base}/${encodeURIComponent(cfg.hojaProductos)}?key=${cfg.apiKey}`);
+    if (!rP.ok) { const err = await rP.json(); throw new Error(err.error?.message || 'Error leyendo Productos'); }
+    const dP = await rP.json();
+    const rowsP = dP.values || [];
+    if (rowsP.length > 1) {
+      const h = rowsP[0];
+      productos = rowsP.slice(1).filter(r => r[0]).map(row => {
+        const o = {}; h.forEach((k, i) => o[k] = row[i] || '');
+        try { o.stock = JSON.parse(o.talles_stock || '{}'); } catch { o.stock = {}; }
+        o.precio = parseFloat(o.precio) || 0;
+        return o;
+      });
+    }
+    // Leer ventas
+    const rV = await fetch(`${base}/${encodeURIComponent(cfg.hojaVentas)}?key=${cfg.apiKey}`);
+    if (rV.ok) {
+      const dV = await rV.json();
+      const rowsV = dV.values || [];
+      if (rowsV.length > 1) {
+        const hV = rowsV[0];
+        ventas = rowsV.slice(1).filter(r => r[0]).map(row => {
+          const o = {}; hV.forEach((k, i) => o[k] = row[i] || '');
+          o.cantidad = parseInt(o.cantidad) || 0;
+          o.precioUnit = parseFloat(o.precio_unit) || 0;
+          o.total = parseFloat(o.total) || 0;
+          o.productoId = o.producto_id;
+          return o;
+        });
+      }
+    }
+    guardarLocal();
+    renderProductos(); renderStock(); renderVentas();
+    toast('Sincronizado con Google Sheets ✓');
+    document.getElementById('sync-status').textContent = 'Última sync: ' + new Date().toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'});
+  } catch (e) {
+    toast('Error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; icon.style.animation = '';
+  }
+}
+
+async function postSheets(payload) {
+  const res = await fetch(cfg.webappUrl, {
+    method: 'POST', mode: 'no-cors',
+    body: JSON.stringify(payload)
+  });
+  return res;
+}
+
+// ─── CONFIG ───────────────────────────────────────────────────
+function guardarConfig() {
+  cfg.sheetId = document.getElementById('cfg-sheet-id').value.trim();
+  cfg.hojaProductos = document.getElementById('cfg-hoja-productos').value.trim();
+  cfg.hojaVentas = document.getElementById('cfg-hoja-ventas').value.trim();
+  cfg.apiKey = document.getElementById('cfg-api-key').value.trim();
+  cfg.webappUrl = document.getElementById('cfg-webapp-url').value.trim();
+  localStorage.setItem('sz_sheetId', cfg.sheetId);
+  localStorage.setItem('sz_hojaProductos', cfg.hojaProductos);
+  localStorage.setItem('sz_hojaVentas', cfg.hojaVentas);
+  localStorage.setItem('sz_apiKey', cfg.apiKey);
+  localStorage.setItem('sz_webappUrl', cfg.webappUrl);
+  actualizarSyncStatus();
+  toast('Configuración guardada ✓');
+}
+
+function guardarTalles() {
+  const val = document.getElementById('cfg-talles').value;
+  talles = val.split(',').map(t => t.trim()).filter(Boolean);
+  localStorage.setItem('sz_talles', val);
+  toast('Talles guardados ✓');
+}
+
+function copiarScript() {
+  const txt = document.getElementById('apps-script-code').textContent;
+  navigator.clipboard.writeText(txt).then(() => toast('Código copiado ✓')).catch(() => toast('No se pudo copiar', 'error'));
+}
+
+// ─── DEMO ─────────────────────────────────────────────────────
+function cargarDemo() {
+  productos = [
+    { id: uid(), marca:'Nike', modelo:'Air Force 1', color:'Blanco', precio:85000, stock:{35:2,36:3,37:5,38:4,39:6,40:3,41:2,42:1,43:0,44:0} },
+    { id: uid(), marca:'Adidas', modelo:'Superstar', color:'Blanco/Negro', precio:72000, stock:{35:1,36:0,37:2,38:3,39:4,40:5,41:3,42:2,43:1,44:0} },
+    { id: uid(), marca:'Nike', modelo:'Air Max 90', color:'Negro', precio:95000, stock:{35:0,36:1,37:2,38:3,39:2,40:4,41:3,42:2,43:1,44:1} },
+    { id: uid(), marca:'Puma', modelo:'Suede Classic', color:'Azul', precio:58000, stock:{35:3,36:2,37:4,38:5,39:3,40:2,41:1,42:0,43:0,44:0} },
+    { id: uid(), marca:'Converse', modelo:'Chuck Taylor', color:'Negro', precio:45000, stock:{35:5,36:4,37:6,38:7,39:5,40:4,41:3,42:2,43:1,44:0} },
+  ];
+  const pid = productos[0].id;
+  ventas = [
+    { id: uid(), productoId: pid, marca:'Nike', modelo:'Air Force 1', talle:'39', cantidad:1, precioUnit:85000, total:85000, fecha: new Date().toLocaleDateString('es-AR') },
+    { id: uid(), productoId: productos[1].id, marca:'Adidas', modelo:'Superstar', talle:'40', cantidad:2, precioUnit:72000, total:144000, fecha: new Date().toLocaleDateString('es-AR') },
+  ];
+  guardarLocal();
+  renderProductos(); renderStock(); renderVentas();
+  toast('Datos de prueba cargados ✓');
+}
+</script>
+</body>
+</html>
